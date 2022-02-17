@@ -1,4 +1,6 @@
 from pyeda.inter import *
+import os
+from os.path import exists
 # example
 # x_0_1_2_3 = exprvar('x', (0, 1, 2 ,3))
 # print(x_0_1_2_3)
@@ -21,54 +23,67 @@ def set_s_input(prompt):
          size of set S, for which the set will be constructed from
          1 to N."""
     s = "s"     # stand-in for expvar variable assignment
-    # data = setS
-    # open('input_file.txt', "x")  # creates new file titled input_file.txt
-    """above not needed"""
+    file_exists = os.path.exists('input_file.txt')
+    if file_exists:
+        with open('input_file.txt', 'a') as f:
+            f.write("\n\n New Test:\n")
+    else:
+        open('input_file.txt', "x")  # creates new file titled input_file.txt
     while True:
         try:
-            with open('input_file.txt', 'r') as f:  # input-file handling
-                data = [line.strip() for line in f]  # input-file printout
-
             correct_input = int(input(prompt))  # take in user input
             print("You have chosen " + str(correct_input))  # echo back user input for confirmation
-
         except ValueError:
-            print("Error; Input shall be int N denoting size of set S from 1 to N. Please try again.")
+            print("Error; Input shall be int N denoting size of set S from 1 to N.")
             exit("Value Error")
         else:
             i = 0  # iterator
             print("The variables in set S are as follows:")
             while i < int(correct_input):
-                indexed_S = exprvar(s, i)
-                data.append(indexed_S)
-                print(indexed_S)
-                i += 1  # increment i until i == N
+                indexed_S = (exprvar(s, i))  # exprvar yields variable
+                str_indexed_S = repr(indexed_S)  # file writing to txt requires str
+                with open('input_file.txt', 'a') as f:
+                    f.write(str_indexed_S + ',')
+                    print(indexed_S)
+                    i += 1  # increment i until i == N
                 if i == correct_input:
+                    with open('input_file.txt', 'a') as f:
+                        f.write('\n')  # separation to distinguish input types
+                        f.close()
                     return indexed_S
-            with open('input_file.txt', 'w') as nf:
-                nf.write('\n'.join(data))
-        #return
 
 # Global variable set S from input function
 setS = set_s_input("Please input an integer denoting N, the size of set S.\n")
-# Printout of set S should be echoed to user for visual inspection.
-print(setS)
+
 
 """Function/Global variable for subsetS"""
 #input function for subset S to be given by user
 def subset_s_input(prompt):
-    """ subset_s_input takes the user input for the set which is a subset of S"""
-    #data = subsetS
-    end = str("done")
+    """ subset_s_input takes the user input for the set which is a subset of S. """
     while True:
         try:
             correct_input = input(prompt)
         except ValueError:
-            print("Error; Set values should be strings corresponding to the subset of S already input. Please try again.")
+            print("Error; Set values should be strings corresponding to the subset of S "
+                  "already input.\n Please try again.")
         else:
+            with open('input_file.txt', 'r') as f:  # input-file handling
+                data = [line.strip() for line in f]  # input-file printout
+                f.close()
+                if correct_input == 'done':
+                    with open('input_file.txt', 'a') as nf:
+                        nf.write('\n')  # separation to distinguish input types
+                        nf.close()
+                        break
+                else:  # correct_input != 'done':
+                    indexed_subS = exprvar(correct_input)
+                    with open('input_file.txt', 'a') as nf:
+                        nf.write(str(indexed_subS) + ',')
+                        data.append(indexed_subS)
+                        print("To confirm for yourself; you have chosen the subsets:")
+                        print(indexed_subS)
+            nf.close()
             return correct_input
-    #elif: data = end
-    #        return end
 
 
 
@@ -79,18 +94,24 @@ subsetS = subset_s_input("Please input variables from S to make subsets i.e. {1,
 """Function/Global variable for subCost"""
 # input function for set S to be given by user
 def sub_cost_input(prompt):
-    """ Takes the user input for the cost of each subset"""
-    #data = setS
-    if True:
+    """ Takes the user input for the cost of each subset as it is read from the input file. """
+    while True:
         try:
             correct_input = input(prompt)
         except ValueError:
             print("Error; Set values should be integers. Please try again.")
         else:
+            with open('input_file.txt', 'a+') as f:  # input-file handling
+                data = [line.strip() for line in f]  # input-file printout
+                #f.close()
+                #with open('input_file.txt', 'a') as nf:
+                f.write(correct_input + ',')
+                data.append(correct_input)
+            f.close()
             return correct_input
 
 #Global variable set S from input function
-subCost = sub_cost_input("Please input the cost of each subset.")
+subCost = sub_cost_input("Please input the cost of each subset.\n")
 
 """ The following are two Lower-Bound functions to be used in ExactUCP"""
 # Some options we can use are:
