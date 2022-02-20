@@ -1,44 +1,32 @@
 from pyeda.inter import *
 import os
-from os.path import exists
 # example
 # x_0_1_2_3 = exprvar('x', (0, 1, 2 ,3))
 # print(x_0_1_2_3)
-LB = ""
-
-
-# Introduction
-#print("Hello, press any key to continue")
-
-
-""" The following is a series of input functions 
-    for generating ExactUCP/LB function arguments """
-
-
 
 """Function/Global variable for setS"""
-# input function for set S to be given by user
 def set_s_input(prompt):
     """ set_s_input takes the user input of an integer N, denoting the
          size of set S, for which the set will be constructed from
-         1 to N."""
+         1 to N.
+         This integer N corresponds to the number of rows in the Matrix to
+         be generated for UCP, and also represents the minterms."""
     s = "s"     # stand-in for expvar variable assignment
     file_exists = os.path.exists('input_file.txt')
     if file_exists:
-        with open('input_file.txt', 'a') as f:
-            f.write("\n\n New Test:\n")
+        with open('input_file.txt', 'w') as f:
+            f.write("")  # clears previous test inputs
     else:
         open('input_file.txt', "x")  # creates new file titled input_file.txt
     while True:
         try:
             correct_input = int(input(prompt))  # take in user input
-            print("You have chosen " + str(correct_input))  # echo back user input for confirmation
         except ValueError:
             print("Error; Input shall be int N denoting size of set S from 1 to N.")
             exit("Value Error")
         else:
             i = 0  # iterator
-            print("The variables in set S are as follows:")
+            print("The minterms in set S are as follows:")
             while i < int(correct_input):
                 indexed_S = (exprvar(s, i))  # exprvar yields variable
                 str_indexed_S = repr(indexed_S)  # file writing to txt requires str
@@ -52,49 +40,57 @@ def set_s_input(prompt):
                         f.close()
                     return indexed_S
 
+
 # Global variable set S from input function
 setS = set_s_input("Please input an integer denoting N, the size of set S.\n")
 
 
 """Function/Global variable for subsetS"""
-#input function for subset S to be given by user
 def subset_s_input(prompt):
-    """ subset_s_input takes the user input for the set which is a subset of S. """
+    """ subset_s_input takes the user input for the sets which are subsets of S.
+        This input will correspond to the onset values of each row, corresponding
+        to the prime implicants.
+        The number of subsets generated will also correspond to the  number of
+        columns for the Matrix to be generated for UCP."""
+    s = "s"  # stand in for consistency in sets and subsets
     while True:
         try:
             correct_input = input(prompt)
+            with open('input_file.txt', 'r') as f:
+                data = [line.strip() for line in f]
+                dataset = set(data)
+#                print("Recall, the set S input is: ", dataset, "\n")
+#                if not set(correct_input).issubset(dataset):
+#                    raise ValueError
         except ValueError:
-            print("Error; Set values should be strings corresponding to the subset of S "
+            print("Error; Set values should be corresponding to the subset of S "
                   "already input.\n Please try again.")
         else:
-            with open('input_file.txt', 'r') as f:  # input-file handling
-                data = [line.strip() for line in f]  # input-file printout
-                f.close()
-                if correct_input == 'done':
-                    with open('input_file.txt', 'a') as nf:
-                        nf.write('\n')  # separation to distinguish input types
-                        nf.close()
-                        break
-                else:  # correct_input != 'done':
-                    indexed_subS = exprvar(correct_input)
-                    with open('input_file.txt', 'a') as nf:
-                        nf.write(str(indexed_subS) + ',')
-                        data.append(indexed_subS)
-                        print("To confirm for yourself; you have chosen the subsets:")
-                        print(indexed_subS)
+            if correct_input == 'done':
+                return
+            with open('input_file.txt', 'a') as nf:
+                indexed_subS = exprvar(correct_input)
+                nf.write(str(indexed_subS) + ',')
+                nf.write(' ')  # for separation after each subset
+                subset_s_input(prompt)
             nf.close()
             return correct_input
 
 
-
-""" Should be in form {a,b} or {a,b,c} etc"""
-#Global variable subset S from input function
-subsetS = subset_s_input("Please input variables from S to make subsets i.e. {1,3}, {2,3,4}, {1,5}.\n")
+# Global variable subset S from input function
+subsetS = subset_s_input("\nPlease input variables from S to make a subset in form: "
+                         "s[1],s[3], s[2],s[3],s[4], s[1],s[5], etc.\n"
+                         "Once done, type 'done' to move to cost assignment.\n")
 
 """Function/Global variable for subCost"""
 # input function for set S to be given by user
 def sub_cost_input(prompt):
-    """ Takes the user input for the cost of each subset as it is read from the input file. """
+    """ sub_cost_input takes the user input for the cost of each subset as
+        it is read from the input file.
+        Generally the cost of the subsets will be the number of literals in
+        the subset, however since the input arguments for subset_s_input
+        and set_s_input don't  explicitly define the literals, we leave the
+        input available to the user. """
     while True:
         try:
             correct_input = input(prompt)
@@ -102,16 +98,17 @@ def sub_cost_input(prompt):
             print("Error; Set values should be integers. Please try again.")
         else:
             with open('input_file.txt', 'a+') as f:  # input-file handling
-                data = [line.strip() for line in f]  # input-file printout
-                #f.close()
-                #with open('input_file.txt', 'a') as nf:
+                f.write('\n')  # for separation between subset and cost
                 f.write(correct_input + ',')
-                data.append(correct_input)
+                f.write("\n")
             f.close()
             return correct_input
 
-#Global variable set S from input function
-subCost = sub_cost_input("Please input the cost of each subset.\n")
+
+# Global variable set S from input function
+subCost = sub_cost_input("\nPlease input the cost of each subset in the form:\n "
+                         "1, 2, etc. (in order). This will be connected to the subsets "
+                         "previously input.\n")
 
 """ The following are two Lower-Bound functions to be used in ExactUCP"""
 # Some options we can use are:
@@ -119,8 +116,12 @@ subCost = sub_cost_input("Please input the cost of each subset.\n")
 # Linear Programming Relaxation (LPR)
 # Cutting Planes (CP)
 
-def low_bound_1(setS, subsetS, subCost):
-    """ lower bound function to be used in ExactUCP """
+def low_bound_mis(setS, subsetS, subCost):
+    """ low_bound_mis is a lower bound function utilizing the Maximum
+        Independent Set (MIS).
+        MIS of rows is defined as: A set of independent rows such that
+        if another row is added to the set, it ceases to be an
+        independent set."""
     print('running lower bound function 1')
 
 def low_bound_2(setS, subsetS, subCost):
@@ -133,21 +134,35 @@ def low_bound_2(setS, subsetS, subCost):
     for the specified function arguments"""
 
 
-def ExactUCP(setS, subsetS, subCost, LB):
-    """ Two-level minimization utilizing branch and bound"""
+def ExactUCP(prompt):
+    """ ExactUCP reads in the user decision of a lower bounding function to solve the
+        exact unate covering problem.
+        The inputs of setS, subsetS, and subCost from the input file are read out to
+        generate the matrix which column/row dominance operations will solve UCP on. """
+    print('running ExactUCP')
+    while True:
+        try:
+            LB = input(prompt)
+            if int(LB) < 1 or int(LB) > 2:
+                raise ValueError
+        except ValueError:
+            print("Error; input was not 1 or 2 corresponding to LB functions. Please try again.")
+        else:
+            with open('input_file.txt', 'r') as f:  # input-file handling
+                data = [line.strip() for line in f]  # input-file printout
+                print(data)
+                f.readline()
     # The inputs ExactUCP are (1) a SET Sof elements, (2) a SET of Subsets of S, (4) a cost
     # associated with each subset, and (4) a lower bounding function (LB).
-    print('running ExactUCP')
 
 
-#ExactUCP(LB=LB1)
-#ExactUCP(LB=LB2)
-
+ExactUCP("Please select a lower bounding function for ExactUCP to run on:\n"
+         "1 = (MIS) Maximum Independent Set.\n"
+         "2 = (LPR) Linear Programming Relaxation\n")
 
 """ As required in the prompt; the following is a 
     function for debugging, followed by the command 
     at the end of main.py """
-
 def testdebug():
     # debug function to run all parts of code for self-check at end.
     print('running testdebug')
