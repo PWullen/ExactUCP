@@ -31,7 +31,8 @@ def set_s_input(prompt):
                 i += 1  # increment i until i == N
                 if i == correct_input:
                     with open('input_file.txt', 'a') as f:
-                        f.write(str(np.array(S)))
+                        #f.write(str(np.array(S)))
+                        f.write(str(S))
                         f.write('\n')  # separation to distinguish input types
                         print(np.array(S))
                         f.close()
@@ -66,8 +67,8 @@ def subset_s_input(prompt):
                 S.append(correct_input)
                 #indexed_subS = exprvar(correct_input)
                 #nf.write(str(indexed_subS) + ',')
-                nf.write(str(S) + ',')
-                nf.write(' ')  # for separation after each subset
+                nf.write(str(S))
+                nf.write(';')  # for separation after each subset
                 subset_s_input(prompt)
             nf.close()
             #return correct_input
@@ -109,16 +110,20 @@ subCost = sub_cost_input("\nPlease input the cost of each subset in the form:\n 
 # Linear Programming Relaxation (LPR)
 # Cutting Planes (CP)
 
-def low_bound_mis(setS, subsetS, subCost):
+def low_bound_mis(matrix):
     """ low_bound_mis is a lower bound function utilizing the Maximum
         Independent Set (MIS).
         MIS of rows is defined as: A set of independent rows such that
         if another row is added to the set, it ceases to be an
-        independent set."""
+        independent set.
+
+        For this function we will utilize the minimized matrix to
+        operate implicit enumeration on."""
     print('running lower bound function 1')
 
-def low_bound_2(setS, subsetS, subCost):
-    """ lower bound function to be used in ExactUCP """
+def low_bound_lpr(matrix):
+    """ low_bound_lpr is a lower bound function to be used in ExactUCP
+        that utilizes the Linear Programming Relaxation (LPR) method."""
     print('running lower bound function 2')
 
 
@@ -137,35 +142,78 @@ def ExactUCP(prompt):
         else:
             f = open('input_file.txt', 'r')  # input-file handling
             data = [line.strip() for line in f]  # input-file printout
-            print(data)  # self check
+           # print("The data gathered is ", data)  # self check
             #print(data[0])  # self check
             numCol = len(data[0].split(" "))
-            #print(numCol)  # self check
-            numRow = len(data[1].split(" "))  # incorrect value if format input incorrectly from user
-            #print(numRow)  # self check
+           # print("The number of columns is ", numCol)  # self check
+            numRow = len(data[1].split(";")) - 1  # -1 is for offset of final ;
+           # print("The number of rows is ", numRow)  # self check
             rowWeight = data[2].split(" ")
-            i = 0  # iterator
-            j = 0  # iterator
-            k = 0  # iterator
             a = []  # empty list to be created
-            A = []  # list of a-lists to be created
-            for i, x in enumerate(data[1].split(" ")):
-                if data[1].split(" ") == data[0]:
-                    j = 1.
-                    a.append(j)
-                    i += 1
-                else:
-                    j = 0
-                    a.append(j)
-                    i += 1
-                for k in range(0, numRow):
-                    A.append(a)
-            print(A)
-            matrix = np.array(A).reshape(numRow, numCol)
+            sliced_data0 = str(data[0])[1:-1]  # slice data0 for comparisons
+            for i in set(data[1].split(";")[:-1]):
+                for j in sorted(set(sliced_data0.split(", "))):
+                   # print(i, j)   # self check
+                    if not set(j).issubset(i):  # set(sorted(sliced_data0)).issubset(set(data[1][:-1])):
+                        k = 0
+                        a.append(k)
+                    elif set(j).issubset(i):  # set(sorted(sliced_data0)).issubset(set(data[1][:-1]))
+                        k = 1
+                        a.append(k)
+           # print(a)  # self check
+            matrix = np.array(a).reshape(numRow, numCol)
             print("\nThe matrix generated from the inputs gathered is:\n")
-            print(matrix)
-    # The inputs ExactUCP are (1) a SET Sof elements, (2) a SET of Subsets of S, (4) a cost
-    # associated with each subset, and (4) a lower bounding function (LB).
+            print(matrix, '\n')
+            """Now we have our matrix and can move forward with row/column domination."""
+            mat_copy = matrix
+            row = np.vsplit(mat_copy, 1)
+            col = np.hsplit(mat_copy, 1)
+            splitsr = np.array_split(row, numCol)
+            splitsc = np.array_split(col, numRow)
+            #idx = list(classes).index(var)
+            """ For defining the rows available to be deleted for minimization:
+                Row_i dominates Row_j if Col(Row_i) contains Col(Row_j):
+                can then delete Row_i (dominating row)"""
+            #for row in matrix:  # utilize rowi and rowj for indicies
+            rowi = data[1].split(";")
+            rowj = data[1].split(";")
+            for row in splitsr:
+                #for rowi in splitsr:
+                    #for rowj in splitsr:
+                        while len(row) <= numRow:
+                            #rowi += 1
+                            if row[rowj] in row[rowi]:
+                                del rowi
+                            else:
+                                rowj += 1
+                                if row[rowj] in row[rowi]:
+                                    del row
+            print("After row dominance procedure: \n", matrix, '\n')
+
+            """ For defining columns available to be deleted for minimization:
+                Col_i dominated Col_j if Row(Col_i) contains Row(Col_j); and 
+                if: Cost(Col_i) <= Cost(Col_j) --> del Col_j (dominated col)"""
+            for col in matrix:
+                for coli in splitsc:
+                    for colj in splitsc:
+                        while len(col) <= numCol:
+                            coli += 1
+                            if col[colj] in col[coli]:
+                                if sum(coli) < sum(colj):
+                                    del colj
+                            else:
+                                colj += 1
+                                if col[colj] in col[coli]:
+                                    if sum(coli) < sum(colj):
+                                        del colj
+            print("After column dominance procedure: \n", matrix, '\n')
+
+            """ Now apply Implicit Enumeration through 
+            Branch&Bound lower bounding funct."""
+            if LB == 1:
+                low_bound_mis(matrix)
+            elif LB == 2:
+                low_bound_lpr(matrix)
 
 
 ExactUCP("Please select a lower bounding function for ExactUCP to run on:\n"
