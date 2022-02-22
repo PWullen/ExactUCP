@@ -1,8 +1,14 @@
-from pyeda.inter import *
+#!/usr/bin/env python3
+"""
+# could make chmod a+x [main].py
+# cp main.py Wullen_UCP chmod +x Wullen_UCP could be developed for more intricate executable
+"""
+#from pyeda.inter import *  # shouldnt be needed anymore; kept in for development possibility
 import os
 import numpy as np
 """Importing OS for file-checking"""
 """Importing numpy for matrix operations"""
+# print(os.path.basename(__file__))  # self check of file executable name
 
 def set_s_input(prompt):
     """ set_s_input takes the user input of an integer N, denoting the
