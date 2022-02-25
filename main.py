@@ -184,16 +184,9 @@ def ExactUCP(prompt):
             rowi = data[1].split(";")
             rowj = data[1].split(";")
             for row in splitsr:
-                #for rowi in splitsr:
-                    #for rowj in splitsr:
-                        while len(row) <= numRow:
-                            #rowi += 1
-                            if row[rowj] in row[rowi]:
-                                del rowi
-                            else:
-                                rowj += 1
-                                if row[rowj] in row[rowi]:
-                                    del row
+                while len(row) <= numRow:
+                    if rowi in rowj:
+                        del rowi
             print("After row dominance procedure: \n", matrix, '\n')
 
             """ For defining columns available to be deleted for minimization:
